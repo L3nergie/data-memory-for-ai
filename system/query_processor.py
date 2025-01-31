@@ -1,7 +1,5 @@
 import json
 from typing import List, Dict, Tuple
-from utils.hash_generator import generate_hash
-from utils.tokenizer import tokenize_phrase
 
 class QueryProcessor:
     def __init__(self, words_file: str, phrases_file: str):
@@ -17,14 +15,24 @@ class QueryProcessor:
         except FileNotFoundError:
             return {}
 
-    def search(self, query: str, relevance_threshold: int = 50, max_results: int = 10) -> List[Tuple[str, float]]:
+    def search(self, query: str, relevance_threshold: int = 50, max_results: int = 10, sort_alphabetical: bool = False) -> List[Tuple[str, float]]:
         results = []
         query_words = query.split()
         for phrase, metadata in self.phrases_data.items():
             relevance = self._calculate_relevance(query_words, metadata["tokens"])
             if relevance >= relevance_threshold:
                 results.append((phrase, relevance))
+
+        # Trier par pertinence (par défaut)
         results.sort(key=lambda x: x[1], reverse=True)
+
+        # Trier par ordre alphabétique si demandé
+        if sort_alphabetical:
+            results.sort(key=lambda x: x[0].lower())  # Tri par la première lettre
+            # Si nécessaire, trier par la deuxième lettre
+            if len(results) > 1:
+                results.sort(key=lambda x: x[0].lower()[1] if len(x[0]) > 1 else '')
+
         return results[:max_results]
 
     def _calculate_relevance(self, query_words: List[str], phrase_tokens: List[str]) -> float:
